@@ -1,0 +1,15 @@
+{
+  "profiles": [
+    {
+      "guid": "{8401cde4-62bd-578b-8805-87a64edf5491}",
+      "name": "PowerShell 7 - Repro",
+      "commandline": "\"%PROGRAMFILES%\\PowerShell\\7\\pwsh.exe\" -NoLogo",
+      "startingDirectory": "%USERPROFILE%",
+      "colorScheme": "One Half Dark",
+      "font": {
+        "face": "FiraCode Nerd Font"
+      },
+      "hidden": false
+    }
+  ]
+}

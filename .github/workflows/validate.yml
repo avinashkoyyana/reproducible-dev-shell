@@ -1,0 +1,42 @@
+name: Validate
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  powershell:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install test tools
+        shell: pwsh
+        run: |
+          Set-PSResourceRepository -Name PSGallery -Trusted
+          Install-PSResource Pester -Scope CurrentUser -Quiet
+          Install-PSResource PSScriptAnalyzer -Scope CurrentUser -Quiet
+      - name: Pester
+        shell: pwsh
+        run: Invoke-Pester ./tests -CI
+      - name: PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          $results = Invoke-ScriptAnalyzer -Path . -Recurse -Severity Error
+          $results | Format-Table
+          if ($results) { throw 'PSScriptAnalyzer found errors.' }
+
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Bash
+        run: bash -n linux/bootstrap.sh
+      - name: ShellCheck
+        run: shellcheck linux/bootstrap.sh
+      - name: Validate JSON
+        run: |
+          jq empty config/oh-my-posh.omp.json
+          jq empty config/windows-terminal.fragment.json
