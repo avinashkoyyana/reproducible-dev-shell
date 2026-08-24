@@ -16,6 +16,20 @@
         @{ Id = 'jqlang.jq'; Name = 'jq' }
         @{ Id = 'MikeFarah.yq'; Name = 'yq' }
         @{ Id = 'astral-sh.uv'; Name = 'uv' }
+        @{ Id = 'Docker.DockerDesktop'; Name = 'Docker Desktop' }
+    )
+
+    AgentPackages = @(
+        @{ Id = 'Anthropic.ClaudeCode'; Name = 'Claude Code' }
+    )
+
+    CloudPackages = @(
+        @{ Id = 'Amazon.AWSCLI'; Name = 'AWS CLI' }
+        @{ Id = 'Microsoft.AzureCLI'; Name = 'Azure CLI' }
+        @{ Id = 'Google.CloudSDK'; Name = 'Google Cloud CLI' }
+        @{ Id = 'Kubernetes.kubectl'; Name = 'kubectl' }
+        @{ Id = 'Helm.Helm'; Name = 'Helm' }
+        @{ Id = 'Hashicorp.Terraform'; Name = 'Terraform' }
     )
 
     PowerShellModules = @(

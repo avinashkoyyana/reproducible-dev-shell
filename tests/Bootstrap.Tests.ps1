@@ -19,8 +19,20 @@ Describe 'PowerShell source' {
 Describe 'Package manifest' {
     It 'contains unique WinGet package IDs' {
         $manifest = Import-PowerShellDataFile (Join-Path $repoRoot 'config\packages.psd1')
-        $ids = @($manifest.WindowsPackages.Id)
+        $ids = @(
+            $manifest.WindowsPackages.Id
+            $manifest.AgentPackages.Id
+            $manifest.CloudPackages.Id
+        )
         @($ids | Sort-Object -Unique).Count | Should -Be $ids.Count
+    }
+
+    It 'keeps deferred cloud tools outside the base package group' {
+        $manifest = Import-PowerShellDataFile (Join-Path $repoRoot 'config\packages.psd1')
+        $manifest.WindowsPackages.Id | Should -Contain 'Docker.DockerDesktop'
+        $manifest.AgentPackages.Id | Should -Contain 'Anthropic.ClaudeCode'
+        $manifest.CloudPackages.Id | Should -Contain 'Hashicorp.Terraform'
+        $manifest.WindowsPackages.Id | Should -Not -Contain 'Hashicorp.Terraform'
     }
 }
 

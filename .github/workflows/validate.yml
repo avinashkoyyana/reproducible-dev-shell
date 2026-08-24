@@ -11,13 +11,14 @@ jobs:
   powershell:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install test tools
         shell: pwsh
         run: |
-          Set-PSResourceRepository -Name PSGallery -Trusted
-          Install-PSResource Pester -Scope CurrentUser -Quiet
-          Install-PSResource PSScriptAnalyzer -Scope CurrentUser -Quiet
+          . ./scripts/Bootstrap.Common.ps1
+          Initialize-PSGalleryRepository
+          Install-PSResource Pester -Repository PSGallery -Scope CurrentUser -TrustRepository -Quiet
+          Install-PSResource PSScriptAnalyzer -Repository PSGallery -Scope CurrentUser -TrustRepository -Quiet
       - name: Pester
         shell: pwsh
         run: Invoke-Pester ./tests -CI
@@ -31,7 +32,7 @@ jobs:
   linux:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Validate Bash
         run: bash -n linux/bootstrap.sh
       - name: ShellCheck

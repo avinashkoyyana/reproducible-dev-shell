@@ -47,6 +47,30 @@ function Set-ManagedBlock {
     [IO.File]::WriteAllText($Path, $updated, (New-Object Text.UTF8Encoding($false)))
 }
 
+function Initialize-PSGalleryRepository {
+    [CmdletBinding()]
+    param()
+
+    try {
+        $gallery = Get-PSResourceRepository -Name PSGallery -ErrorAction Stop
+    }
+    catch {
+        Write-Verbose 'The PSResourceGet repository store is unavailable; recreating its default repositories.'
+        if (Get-Command Reset-PSResourceRepository -ErrorAction SilentlyContinue) {
+            Reset-PSResourceRepository -ErrorAction Stop
+        }
+        else {
+            Register-PSResourceRepository -PSGallery -ErrorAction Stop
+        }
+
+        $gallery = Get-PSResourceRepository -Name PSGallery -ErrorAction Stop
+    }
+
+    if (-not $gallery.Trusted) {
+        Set-PSResourceRepository -Name PSGallery -Trusted
+    }
+}
+
 function Invoke-Winget {
     [CmdletBinding()]
     param(
@@ -94,7 +118,7 @@ function Install-WingetPackage {
     }
 
     Write-Host "Installing $($Package.Name)..." -ForegroundColor Cyan
-    Invoke-Winget -Arguments $arguments
+    Invoke-Winget -Arguments $arguments -AllowNoUpgrade
 
     if ($Upgrade) {
         $upgradeArguments = @(

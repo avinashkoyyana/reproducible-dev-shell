@@ -6,6 +6,9 @@ param(
     [switch] $SkipPowerShellConfig,
     [switch] $SkipWSL,
     [switch] $SkipNerdFont,
+    [switch] $SkipAgentClis,
+    [switch] $IncludeWslAgentClis,
+    [switch] $IncludeCloudTools,
     [switch] $Upgrade,
     [switch] $RemoveStorePowerShell
 )
@@ -58,6 +61,23 @@ if (-not $SkipWindowsPackages) {
     }
 }
 
+if ($IncludeCloudTools) {
+    $cloudFailures = New-Object System.Collections.Generic.List[string]
+    foreach ($package in $packages.CloudPackages) {
+        try {
+            Install-WingetPackage -Package $package -Upgrade:$Upgrade
+        }
+        catch {
+            $cloudFailures.Add($package.Id)
+            Write-Warning $_.Exception.Message
+        }
+    }
+
+    if ($cloudFailures.Count -gt 0) {
+        throw "Cloud tool installation failed: $($cloudFailures -join ', ')"
+    }
+}
+
 $pwshPath = "$env:ProgramFiles\PowerShell\7\pwsh.exe"
 if (-not (Test-Path -LiteralPath $pwshPath)) {
     $pwshCommand = Get-Command pwsh.exe -ErrorAction SilentlyContinue
@@ -83,6 +103,19 @@ if (-not $SkipPowerShellConfig) {
     }
 }
 
+if (-not $SkipAgentClis) {
+    $agentArguments = @(
+        '-NoLogo', '-NoProfile', '-ExecutionPolicy', 'Bypass',
+        '-File', (Join-Path $repoRoot 'scripts\Install-AgentClis.ps1')
+    )
+    if ($Upgrade) { $agentArguments += '-Upgrade' }
+
+    & $pwshPath @agentArguments
+    if ($LASTEXITCODE -ne 0) {
+        throw "Developer agent CLI installation failed with exit code $LASTEXITCODE."
+    }
+}
+
 if (-not $SkipWSL) {
     Write-Host 'Updating WSL and selecting WSL 2...' -ForegroundColor Cyan
     & wsl.exe --update
@@ -96,7 +129,15 @@ if (-not $SkipWSL) {
         exit 3010
     }
 
-    & wsl.exe --set-version $Distro 2
+    $verboseDistroList = @(& wsl.exe --list --verbose 2>$null | ForEach-Object { ($_ -replace "`0", '').TrimEnd() })
+    $distroVersionPattern = '^\s*\*?\s*' + [regex]::Escape($Distro) + '\s+.+\s+2\s*$'
+    if (-not ($verboseDistroList -match $distroVersionPattern)) {
+        & wsl.exe --set-version $Distro 2
+        if ($LASTEXITCODE -ne 0) {
+            throw "Could not convert '$Distro' to WSL 2. Close programs using the distro, run 'wsl --shutdown', and rerun install.ps1."
+        }
+    }
+
     $linuxUserOutput = @(& wsl.exe --distribution $Distro -- sh -lc 'id -un' 2>$null | Select-Object -Last 1)
     $linuxUser = if ($linuxUserOutput.Count -gt 0 -and $null -ne $linuxUserOutput[0]) {
         $linuxUserOutput[0].Trim()
@@ -108,7 +149,35 @@ if (-not $SkipWSL) {
         throw "Launch '$Distro' once and create its normal Linux user, then rerun install.ps1."
     }
 
-    $linuxPathOutput = @(& wsl.exe --distribution $Distro -- wslpath -a $repoRoot | Select-Object -Last 1)
+    $previousRepoPath = [Environment]::GetEnvironmentVariable('REPRO_DEV_SHELL_ROOT', 'Process')
+    $previousWslEnv = [Environment]::GetEnvironmentVariable('WSLENV', 'Process')
+    try {
+        $env:REPRO_DEV_SHELL_ROOT = $repoRoot
+        $env:WSLENV = if ($previousWslEnv) {
+            "REPRO_DEV_SHELL_ROOT/p:$previousWslEnv"
+        }
+        else {
+            'REPRO_DEV_SHELL_ROOT/p'
+        }
+
+        $linuxPathOutput = @(& wsl.exe --distribution $Distro -- printenv REPRO_DEV_SHELL_ROOT | Select-Object -Last 1)
+    }
+    finally {
+        if ($null -eq $previousRepoPath) {
+            Remove-Item Env:REPRO_DEV_SHELL_ROOT -ErrorAction SilentlyContinue
+        }
+        else {
+            $env:REPRO_DEV_SHELL_ROOT = $previousRepoPath
+        }
+
+        if ($null -eq $previousWslEnv) {
+            Remove-Item Env:WSLENV -ErrorAction SilentlyContinue
+        }
+        else {
+            $env:WSLENV = $previousWslEnv
+        }
+    }
+
     $linuxRepoRoot = if ($linuxPathOutput.Count -gt 0 -and $null -ne $linuxPathOutput[0]) {
         $linuxPathOutput[0].Trim()
     }
@@ -121,7 +190,9 @@ if (-not $SkipWSL) {
 
     $linuxBootstrap = "$linuxRepoRoot/linux/bootstrap.sh"
     $linuxTheme = "$linuxRepoRoot/config/oh-my-posh.omp.json"
-    & wsl.exe --distribution $Distro -- bash $linuxBootstrap $linuxTheme
+    $installWslAgentClis = if ($IncludeWslAgentClis) { '1' } else { '0' }
+    $upgradeWslAgentClis = if ($Upgrade) { '1' } else { '0' }
+    & wsl.exe --distribution $Distro -- bash $linuxBootstrap $linuxTheme $installWslAgentClis $upgradeWslAgentClis
     if ($LASTEXITCODE -ne 0) {
         throw "WSL bootstrap failed with exit code $LASTEXITCODE."
     }

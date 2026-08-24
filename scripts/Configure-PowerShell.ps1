@@ -18,7 +18,7 @@ if (-not (Get-Command Install-PSResource -ErrorAction SilentlyContinue)) {
     Import-Module Microsoft.PowerShell.PSResourceGet
 }
 
-Set-PSResourceRepository -Name PSGallery -Trusted
+Initialize-PSGalleryRepository
 foreach ($moduleName in $packages.PowerShellModules) {
     $installed = Get-InstalledPSResource -Name $moduleName -ErrorAction SilentlyContinue
     if (-not $installed) {

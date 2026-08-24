@@ -2,6 +2,8 @@
 set -Eeuo pipefail
 
 THEME_SOURCE="${1:-}"
+INSTALL_AGENT_CLIS="${2:-0}"
+UPGRADE_AGENT_CLIS="${3:-0}"
 CONFIG_ROOT="$HOME/.config/repro-dev-shell"
 ZSH_CUSTOM_ROOT="$HOME/.oh-my-zsh/custom"
 TEMP_FILES=()
@@ -30,6 +32,7 @@ for package in eza shellcheck zoxide; do
 done
 
 mkdir -p "$HOME/.local/bin" "$CONFIG_ROOT"
+export PATH="$HOME/.local/bin:$PATH"
 ln -sfn "$(command -v fdfind)" "$HOME/.local/bin/fd"
 ln -sfn "$(command -v batcat)" "$HOME/.local/bin/bat"
 
@@ -66,6 +69,37 @@ if ! command -v uv >/dev/null 2>&1; then
   sh "$installer"
 fi
 
+install_remote_cli() {
+  local command_name="$1"
+  local display_name="$2"
+  local installer_url="$3"
+  local interpreter="$4"
+
+  if command -v "$command_name" >/dev/null 2>&1 && [[ "$UPGRADE_AGENT_CLIS" != '1' ]]; then
+    info "$display_name is already installed."
+    return
+  fi
+
+  info "Downloading the official $display_name installer..."
+  local installer
+  installer="$(mktemp)"
+  TEMP_FILES+=("$installer")
+  curl -fsSL "$installer_url" -o "$installer"
+  [[ -s "$installer" ]] || die "The $display_name installer download is empty."
+  info "$display_name installer SHA256: $(sha256sum "$installer" | cut -d' ' -f1)"
+  "$interpreter" "$installer"
+}
+
+if [[ "$INSTALL_AGENT_CLIS" == '1' ]]; then
+  install_remote_cli codex 'OpenAI Codex CLI' 'https://chatgpt.com/codex/install.sh' sh
+  install_remote_cli claude 'Claude Code' 'https://claude.ai/install.sh' bash
+  install_remote_cli agent 'Cursor CLI' 'https://cursor.com/install' bash
+
+  command -v codex >/dev/null 2>&1 || die 'Codex CLI is not available on PATH after installation.'
+  command -v claude >/dev/null 2>&1 || die 'Claude Code is not available on PATH after installation.'
+  command -v agent >/dev/null 2>&1 || die 'Cursor CLI is not available on PATH after installation.'
+fi
+
 if [[ -n "$THEME_SOURCE" && -f "$THEME_SOURCE" ]]; then
   cp "$THEME_SOURCE" "$CONFIG_ROOT/oh-my-posh.omp.json"
 else
@@ -91,9 +125,11 @@ managed_block() {
   while [[ -s "$temporary" ]] && [[ "$(tail -c 1 "$temporary" | wc -l)" -eq 0 ]]; do
     printf '\n' >> "$temporary"
   done
-  printf '\n%s\n' "$begin" >> "$temporary"
-  cat "$content_file" >> "$temporary"
-  printf '\n%s\n' "$end" >> "$temporary"
+  {
+    printf '\n%s\n' "$begin"
+    cat "$content_file"
+    printf '\n%s\n' "$end"
+  } >> "$temporary"
   mv "$temporary" "$target"
 }
 
