@@ -103,14 +103,18 @@ function Install-WingetPackage {
         [switch] $Upgrade
     )
 
+    # Optional package-manifest keys must use the hashtable indexer. Under
+    # strict mode, property syntax throws when a key is intentionally absent.
+    $installerType = $Package['InstallerType']
+
     $arguments = @(
         'install', '--id', $Package.Id, '--exact', '--source', 'winget',
         '--accept-package-agreements', '--accept-source-agreements',
         '--disable-interactivity', '--silent'
     )
 
-    if ($Package.InstallerType) {
-        $arguments += @('--installer-type', $Package.InstallerType)
+    if ($installerType) {
+        $arguments += @('--installer-type', $installerType)
     }
 
     if ($Package.Id -eq 'Microsoft.PowerShell' -and -not (Test-Path "$env:ProgramFiles\PowerShell\7\pwsh.exe")) {
@@ -126,8 +130,8 @@ function Install-WingetPackage {
             '--accept-package-agreements', '--accept-source-agreements',
             '--disable-interactivity', '--silent'
         )
-        if ($Package.InstallerType) {
-            $upgradeArguments += @('--installer-type', $Package.InstallerType)
+        if ($installerType) {
+            $upgradeArguments += @('--installer-type', $installerType)
         }
         Invoke-Winget -Arguments $upgradeArguments -AllowNoUpgrade
     }

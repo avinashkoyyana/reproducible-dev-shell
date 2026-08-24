@@ -51,7 +51,7 @@ if (-not $SkipWindowsPackages) {
         }
     }
 
-    $requiredFailures = @($packages.WindowsPackages | Where-Object { $_.Required -and $failures.Contains($_.Id) })
+    $requiredFailures = @($packages.WindowsPackages | Where-Object { $_['Required'] -and $failures.Contains($_.Id) })
     if ($requiredFailures.Count -gt 0) {
         throw "Required package installation failed: $($requiredFailures.Id -join ', ')"
     }

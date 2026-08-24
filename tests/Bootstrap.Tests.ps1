@@ -36,6 +36,33 @@ Describe 'Package manifest' {
     }
 }
 
+Describe 'Install-WingetPackage' {
+    BeforeEach {
+        Mock Invoke-Winget
+    }
+
+    It 'accepts a package without optional manifest keys under strict mode' {
+        { Install-WingetPackage -Package @{ Id = 'Example.Tool'; Name = 'Example' } } |
+            Should -Not -Throw
+
+        Should -Invoke Invoke-Winget -Exactly 1 -ParameterFilter {
+            $Arguments -notcontains '--installer-type'
+        }
+    }
+
+    It 'passes InstallerType when the optional key is present' {
+        Install-WingetPackage -Package @{
+            Id = 'Example.Tool'
+            Name = 'Example'
+            InstallerType = 'wix'
+        }
+
+        Should -Invoke Invoke-Winget -Exactly 1 -ParameterFilter {
+            $Arguments -contains '--installer-type' -and $Arguments -contains 'wix'
+        }
+    }
+}
+
 Describe 'Set-ManagedBlock' {
     It 'is idempotent and preserves unmanaged content' {
         $path = Join-Path $TestDrive 'profile.ps1'
