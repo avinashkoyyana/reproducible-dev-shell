@@ -8,6 +8,7 @@ param(
     [switch] $SkipNerdFont,
     [switch] $SkipAgentClis,
     [switch] $IncludeWslAgentClis,
+    [switch] $IncludeGitNexus,
     [switch] $IncludeCloudTools,
     [switch] $Upgrade,
     [switch] $RemoveStorePowerShell
@@ -109,6 +110,7 @@ if (-not $SkipAgentClis) {
         '-File', (Join-Path $repoRoot 'scripts\Install-AgentClis.ps1')
     )
     if ($Upgrade) { $agentArguments += '-Upgrade' }
+    if ($IncludeGitNexus) { $agentArguments += '-IncludeGitNexus' }
 
     & $pwshPath @agentArguments
     if ($LASTEXITCODE -ne 0) {
