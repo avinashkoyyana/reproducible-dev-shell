@@ -13,9 +13,9 @@ separately on each machine; the graph installation makes no model/API calls.
 
 ## New Windows 11 PC
 
-1. Copy/clone this repository, including these changes, to the new PC. Until the
-   changes are committed and pushed with approval, cloning GitHub alone will not
-   include them. Run the base `install.ps1` as described in the main README.
+1. Clone this repository's current `main` branch to the new PC, or update an
+   existing checkout. The graph package is included in the repository. Run the
+   base `install.ps1` as described in the main README.
 2. Open a **non-elevated PowerShell 7** window as the user who will use Codex/Cursor.
 3. Review and run:
 
