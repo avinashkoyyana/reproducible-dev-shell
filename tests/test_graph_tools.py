@@ -159,7 +159,7 @@ class GraphTests(unittest.TestCase):
         excluded = projects / 'excluded'; (excluded / '.git').mkdir(parents=True)
         (base / 'roots.json').write_text(json.dumps({'roots':[str(home),str(projects), str(base)], 'exclude':[str(excluded)], 'discover_clients':False}))
         with patch.object(watch, 'HOME', home), patch.object(watch, 'BASE', base):
-            self.assertEqual(watch.discovered_roots(), [repo])
+            self.assertEqual(watch.discovered_roots(), [repo.resolve()])
 
     def test_malformed_scope_fails_instead_of_enabling_discovery(self):
         (self.root / 'roots.json').write_text('{broken')

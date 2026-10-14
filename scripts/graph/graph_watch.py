@@ -116,7 +116,9 @@ def discovered_roots():
                     roots.append(str((ws.parent / item['path']).resolve()))
     result = {}
     # Broad container roots are expanded only to immediate child Git repos.
-    containers = {HOME, HOME / 'Projects', HOME / 'Downloads', HOME / 'Documents'}
+    # Windows may expose an 8.3 home path (e.g. RUNNER~1), while resolve() above
+    # expands discovered paths. Compare canonical paths on both sides.
+    containers = {p.resolve() for p in (HOME, HOME / 'Projects', HOME / 'Downloads', HOME / 'Documents')}
     for raw in roots:
         if not isinstance(raw, str) or not raw.strip():
             continue
