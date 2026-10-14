@@ -13,8 +13,9 @@ An idempotent bootstrap for a consistent Windows development workstation: PowerS
 | Zsh | Oh My Zsh, autosuggestions, syntax highlighting, fzf-tab, direnv, zoxide, aliases, shared prompt |
 | Terminal | A discoverable `PowerShell 7 - Repro` profile using FiraCode Nerd Font |
 | Optional cloud tools | AWS CLI, Azure CLI, Google Cloud CLI, kubectl, Helm, and Terraform |
+| Optional local graphs | Pinned Codebase Memory, Codex/Cursor MCP configuration, and automatic per-user refresh |
 
-The package identities and configuration are declarative. Package versions intentionally float to the latest stable release available from WinGet, apt, and upstream installers; this avoids stale version locks while keeping the resulting shell configuration consistent.
+The package identities and configuration are declarative. Base package versions intentionally float to the latest stable release available from WinGet, apt, and upstream installers; this avoids stale version locks while keeping the resulting shell configuration consistent. The optional graph package uses a pinned, checksum-verified release.
 
 ## Quick start
 
@@ -120,6 +121,24 @@ agent
 For Linux-native copies, run the main bootstrap with `-IncludeWslAgentClis`, then open **Ubuntu/Zsh** and use the same verification and login commands. Windows and WSL installations intentionally have separate binaries and may require separate first-time sign-ins.
 
 Installation sources: [OpenAI Codex CLI](https://learn.chatgpt.com/docs/codex/cli), [Claude Code](https://code.claude.com/docs/en/quickstart), and [Cursor CLI](https://cursor.com/docs/cli/installation).
+
+## Optional local graph tools
+
+After the base installation, open a **non-elevated PowerShell 7** window:
+
+```powershell
+.\scripts\Install-GraphTools.ps1 -WhatIf
+.\scripts\Install-GraphTools.ps1
+```
+
+This installs Codebase Memory 0.11.0 for Windows x64, merges its Codex/Cursor MCP
+configuration with backups, and schedules local refresh every five minutes and
+at sign-in. Indexes and project paths are rebuilt separately on each PC. It makes
+no model calls and copies no credentials. An existing ATS refresh task is preserved
+and blocks duplicate scheduling. Native WSL graph deployment is separate.
+
+See [setup, verification, scope and rollback](docs/graph-tools.md). The base
+`install.ps1` does not invoke this per-user setup from its elevated session.
 
 ## Docker and WSL
 

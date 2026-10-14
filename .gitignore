@@ -2,3 +2,9 @@
 *.tmp
 .DS_Store
 Thumbs.db
+__pycache__/
+*.pyc
+# Machine state and backups must never travel with this bootstrap.
+*.pre-repro-graph-*
+*.repro-pending
+testResults.xml

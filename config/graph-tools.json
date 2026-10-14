@@ -1,0 +1,7 @@
+{
+  "version": "0.11.0",
+  "windows-amd64": {
+    "url": "https://github.com/DeusData/codebase-memory-mcp/releases/download/v0.11.0/codebase-memory-mcp-windows-amd64.zip",
+    "sha256": "6eb6beaf261b19e419766e78baf93cbc3cf1c6338cff8fb7c0234859f96d1685"
+  }
+}
