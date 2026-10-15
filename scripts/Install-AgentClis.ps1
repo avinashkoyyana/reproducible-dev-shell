@@ -1,7 +1,8 @@
 #Requires -Version 7.4
 [CmdletBinding()]
 param(
-    [switch] $Upgrade
+    [switch] $Upgrade,
+    [switch] $IncludeGitNexus
 )
 
 Set-StrictMode -Version Latest
@@ -67,6 +68,40 @@ function Invoke-PublisherPowerShellInstaller {
     }
 }
 
+function Install-GitNexus {
+    [CmdletBinding()]
+    param()
+
+    $npm = Get-Command npm.cmd -ErrorAction SilentlyContinue
+    if (-not $npm) {
+        $npm = Get-Command npm -ErrorAction SilentlyContinue
+    }
+
+    if (-not $npm) {
+        Write-Warning 'GitNexus was requested, but npm is not available on PATH. Install Node.js/npm first, then rerun with -IncludeGitNexus.'
+        return
+    }
+
+    Write-Host 'Installing GitNexus code-intelligence CLI...' -ForegroundColor Cyan
+    & $npm.Source install --global gitnexus@latest
+    if ($LASTEXITCODE -ne 0) {
+        throw "GitNexus installation failed with exit code $LASTEXITCODE."
+    }
+
+    Update-ProcessPath
+    $gitNexus = Get-Command gitnexus -ErrorAction SilentlyContinue
+    if (-not $gitNexus) {
+        throw "GitNexus was installed, but 'gitnexus' is not available on PATH. Open a new PowerShell 7 window and verify it manually."
+    }
+
+    $version = & $gitNexus.Source --version
+    if ($LASTEXITCODE -ne 0) {
+        throw "GitNexus verification failed with exit code $LASTEXITCODE."
+    }
+    Write-Host "GitNexus: $($version -join ' ')" -ForegroundColor Green
+    Write-Host 'Next: run `gitnexus setup` once, then `gitnexus analyze` from each repository that should be indexed.' -ForegroundColor DarkGray
+}
+
 if (-not (Get-Command winget.exe -ErrorAction SilentlyContinue)) {
     throw 'WinGet is required to install Claude Code.'
 }
@@ -98,6 +133,10 @@ elseif ($Upgrade) {
 }
 
 Update-ProcessPath
+
+if ($IncludeGitNexus) {
+    Install-GitNexus
+}
 
 $verificationCommands = @(
     @{ Name = 'Codex CLI'; Command = 'codex'; Arguments = @('--version') }
